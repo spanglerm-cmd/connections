@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connections Puzzle 1</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f7f7f5;
+    color: #222;
+  }
+  .game {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 18px 40px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 32px;
+    margin: 0 0 8px;
+    font-weight: 700;
+  }
+  .instructions {
+    margin: 0 auto 22px;
+    font-size: 17px;
+    line-height: 1.4;
+    max-width: 600px;
+  }
+  .mistakes {
+    min-height: 28px;
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  .dots {
+    display: inline-flex;
+    gap: 7px;
+    vertical-align: middle;
+    margin-left: 7px;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #333;
+  }
+  .dot.used { background: #ccc; }
+  #message {
+    min-height: 26px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .groups {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .solved {
+    padding: 13px 12px;
+    border-radius: 8px;
+    background: #ddd;
+  }
+  .solved.group-blue { background: #b9d9ff; }
+  .solved.group-purple { background: #d8b9ff; }
+  .solved.group-yellow { background: #ffe89a; }
+  .solved.group-green { background: #bde8c4; }
+  .infinity {
+    margin: 8px auto 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #eee;
+    font-weight: 700;
+  }
+  .solved .connection {
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 16px;
+  }
+  .solved .words {
+    margin-top: 4px;
+    font-size: 14px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 10px 0 18px;
+  }
+  .tile {
+    border: 0;
+    border-radius: 8px;
+    min-height: 82px;
+    padding: 8px;
+    background: #e8e8e8;
+    color: #222;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .08s, background .12s;
+  }
+  .tile:hover { transform: translateY(-1px); }
+  .tile.selected {
+    background: #555;
+    color: white;
+  }
+  .tile:disabled {
+    cursor: default;
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  button.control {
+    border: 0;
+    border-radius: 7px;
+    padding: 12px 22px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #222;
+    color: white;
+  }
+  button.control.secondary {
+    background: #ddd;
+    color: #222;
+  }
+  button.control:disabled {
+    opacity: .45;
+    cursor: default;
+  }
+  .win {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 10px;
+    background: #e6e6e6;
+  }
+  .win h2 { margin: 0 0 8px; }
+  @media (max-width: 520px) {
+    .game { padding: 22px 10px 32px; }
+    h1 { font-size: 27px; }
+    .tile { min-height: 70px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="game">
+  <h1 id="title">Connections Puzzle 1</h1>
+  <p class="instructions">Find four groups of four words that share something in common.</p>
+
+  <div class="mistakes">
+    Mistakes remaining:
+    <span class="dots" id="dots"></span>
+  </div>
+
+  <div id="message"></div>
+  <div class="groups" id="groups"></div>
+  <div class="grid" id="grid"></div>
+
+  <div class="controls">
+    <button class="control" id="submitBtn">Submit</button>
+    <button class="control secondary" id="shuffleBtn">Shuffle</button>
+  </div>
+
+  <div id="win"></div>
+</div>
+
+<script>
+const puzzle = {
+  id: 1,
+  title: "Connections Puzzle 1",
+  groups: [
+    {
+      words: ["MARS", "SATURN", "JUPITER", "NEPTUNE"],
+      connection: "Planets"
+    },
+    {
+      words: ["CHEETAH", "LEOPARD", "LION", "TIGER"],
+      connection: "Animals"
+    },
+    {
+      words: ["FERRARI", "MERCURY", "TESLA", "JAGUAR"],
+      connection: "Cars"
+    },
+    {
+      words: ["EARTH", "SUN", "OIL", "COAL"],
+      connection: "Things We Get Energy From"
+    }
+  ]
+};
+
+let tiles = [];
+let selected = [];
+let mistakes = 0;
+const maxMistakes = 4;
+let solvedGroups = [];
+let infinityMode = false;
+const attemptedWrongGuesses = new Set();
+const groupColors = ["blue", "purple", "yellow", "green"];
+
+function shuffle(array) {
+  const a = [...array];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function allWords() {
+  return puzzle.groups.flatMap((group, groupIndex) =>
+    group.words.map(word => ({ word, groupIndex }))
+  );
+}
+
+function renderDots() {
+  const dots = document.getElementById("dots");
+  dots.innerHTML = "";
+  for (let i = 0; i < maxMistakes; i++) {
+    const dot = document.createElement("span");
+    dot.className = "dot" + (i < mistakes ? " used" : "");
+    dots.appendChild(dot);
+  }
+}
+
+function renderGroups() {
+  const container = document.getElementById("groups");
+  container.innerHTML = "";
+  solvedGroups.forEach((group, index) => {
+    const div = document.createElement("div");
+    div.className = "solved group-" + groupColors[group.groupIndex];
+    div.innerHTML = `
+      <div class="connection">${group.connection}</div>
+      <div class="words">${group.words.join(" • ")}</div>
+    `;
+    container.appendChild(div);
+  });
+  if (infinityMode && solvedGroups.length < 4) {
+    const notice = document.createElement("div");
+    notice.className = "infinity";
+    notice.textContent = "Infinity Mode: Keep solving! You can keep guessing.";
+    container.appendChild(notice);
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  tiles.forEach((tile, index) => {
+    const btn = document.createElement("button");
+    btn.className = "tile" + (selected.includes(index) ? " selected" : "");
+    btn.textContent = tile.word;
+    btn.onclick = () => toggleTile(index);
+    grid.appendChild(btn);
+  });
+}
+
+function render() {
+  renderDots();
+  renderGroups();
+  renderGrid();
+  document.getElementById("submitBtn").disabled = selected.length !== 4 || solvedGroups.length === 4;
+  document.getElementById("shuffleBtn").disabled = solvedGroups.length === 4;
+}
+
+function toggleTile(index) {
+  if (solvedGroups.length === 4) return;
+
+  if (selected.includes(index)) {
+    selected = selected.filter(i => i !== index);
+  } else if (selected.length < 4) {
+    selected.push(index);
+  }
+  document.getElementById("message").textContent = "";
+  render();
+}
+
+function submitSelection() {
+  if (selected.length !== 4) return;
+
+  const selectedWords = selected.map(i => tiles[i].word);
+  const guessKey = [...selectedWords].sort().join("|");
+
+  if (attemptedWrongGuesses.has(guessKey)) {
+    document.getElementById("message").textContent = "Already Tried";
+    selected = [];
+    render();
+    return;
+  }
+
+  const groupIndex = tiles[selected[0]].groupIndex;
+  const correctGroup = puzzle.groups[groupIndex];
+
+  const isCorrect =
+    selectedWords.every(word => correctGroup.words.includes(word)) &&
+    selectedWords.length === correctGroup.words.length;
+
+  if (isCorrect) {
+    solvedGroups.push({...correctGroup, groupIndex});
+    tiles = tiles.filter((_, index) => !selected.includes(index));
+    selected = [];
+    document.getElementById("message").textContent = "Correct!";
+
+    if (solvedGroups.length === 4) {
+      document.getElementById("win").innerHTML = `
+        <div class="win">
+          <h2>Puzzle Complete!</h2>
+          <div>You solved all four connections.</div>
+        </div>`;
+      document.getElementById("message").textContent = "";
+    }
+  } else {
+    attemptedWrongGuesses.add(guessKey);
+    mistakes++;
+
+    const overlapCounts = puzzle.groups.map(group =>
+      selectedWords.filter(word => group.words.includes(word)).length
+    );
+    const bestOverlap = Math.max(...overlapCounts);
+
+    document.getElementById("message").textContent =
+      bestOverlap === 3 ? "One away!" : "Not quite. Try again.";
+
+    selected = [];
+
+    if (mistakes >= maxMistakes) {
+      infinityMode = true;
+      document.getElementById("message").textContent =
+        "You've used your four mistakes. Infinity Mode is on!";
+    }
+  }
+  render();
+}
+function revealSolution() {
+  solvedGroups = puzzle.groups.map((group, groupIndex) => ({...group, groupIndex}));
+  tiles = [];
+  selected = [];
+  document.getElementById("win").innerHTML = `
+    <div class="win">
+      <h2>Solution</h2>
+      <div>You can review all four connections above.</div>
+    </div>`;
+}
+function shuffleTiles() {
+  tiles = shuffle(tiles);
+  selected = [];
+  document.getElementById("message").textContent = "";
+  render();
+}
+
+function startGame() {
+  document.getElementById("title").textContent = puzzle.title;
+  tiles = shuffle(allWords());
+  selected = [];
+  mistakes = 0;
+  solvedGroups = [];
+  infinityMode = false;
+  attemptedWrongGuesses.clear();
+  document.getElementById("message").textContent = "";
+  document.getElementById("win").innerHTML = "";
+  render();
+}
+
+document.getElementById("submitBtn").addEventListener("click", submitSelection);
+document.getElementById("shuffleBtn").addEventListener("click", shuffleTiles);
+
+startGame();
+</script>
+</body>
+</html>
