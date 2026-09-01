@@ -1,53 +1,266 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gifted Connections</title>
+<title>Connections Challenge</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f7f7f5;color:#222}
-.game{max-width:720px;margin:auto;padding:28px 18px 40px;text-align:center}
-h1{font-size:32px;margin:0 0 8px}.instructions{font-size:17px;line-height:1.4;margin:0 auto 22px}
-.mistakes{min-height:28px;font-size:16px;margin-bottom:12px}.dots{display:inline-flex;gap:7px;vertical-align:middle;margin-left:7px}
-.dot{width:10px;height:10px;border-radius:50%;background:#333}.dot.used{background:#ccc}
-#message{min-height:26px;font-weight:700;margin-bottom:12px}.groups{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-.solved{padding:13px 12px;border-radius:8px}.group-blue{background:#b9d9ff}.group-purple{background:#d8b9ff}
-.group-yellow{background:#ffe89a}.group-green{background:#bde8c4}
-.connection{font-weight:800;text-transform:uppercase;font-size:16px}.words{margin-top:4px;font-size:14px}
-.infinity{padding:10px;border-radius:8px;background:#eee;font-weight:700}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 18px}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f4f1;color:#222}
+.game,.home{max-width:800px;margin:auto;padding:32px 18px 48px;text-align:center}
+.home{padding-top:46px}
+.home-header{background:#222;color:white;border-radius:18px;padding:34px 22px 30px;margin-bottom:28px;box-shadow:0 4px 12px rgba(0,0,0,.10)}
+.home-header h1{font-size:44px;margin:0 0 10px;letter-spacing:-1px}
+.home-subtitle{font-size:20px;line-height:1.4;margin:0;color:#e5e5e5}
+.home-section{margin:28px 0}
+.home-section h2{font-size:23px;margin:0 0 16px}
+.puzzle-list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:620px;margin:auto}
+.puzzle-button{width:100%;border:0;border-radius:12px;padding:18px 20px;background:white;color:#222;font-size:18px;font-weight:700;cursor:pointer;text-align:left;box-shadow:0 2px 7px rgba(0,0,0,.10);transition:transform .12s ease,box-shadow .12s ease}
+.puzzle-button:hover{transform:translateY(-2px);box-shadow:0 5px 12px rgba(0,0,0,.14)}
+.puzzle-button small{display:block;font-size:14px;font-weight:400;margin-top:5px;color:#666}
+.create-box{max-width:620px;margin:30px auto 0;padding:24px;border-radius:14px;background:#e4e4e1}
+.create-box h2{margin:0 0 8px}
+.create-box p{margin:0;color:#666;line-height:1.4}
+.challenge-line{margin:34px auto 0;font-size:17px;font-weight:700;max-width:560px}
+.instructions{font-size:17px;line-height:1.4;margin:0 auto 22px}
+.mistakes{min-height:28px;font-size:16px;margin-bottom:12px}
+.dots{display:inline-flex;gap:7px;vertical-align:middle;margin-left:7px}
+.dot{width:10px;height:10px;border-radius:50%;background:#333}
+.dot.used{background:#ccc}
+#message{min-height:26px;font-weight:700;margin-bottom:12px}
+.groups{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.solved{padding:13px 12px;border-radius:8px}
+.group-blue{background:#b9d9ff}
+.group-purple{background:#d8b9ff}
+.group-yellow{background:#ffe89a}
+.group-green{background:#bde8c4}
+.connection{font-weight:800;text-transform:uppercase;font-size:16px}
+.words{margin-top:4px;font-size:14px}
+.infinity{padding:10px;border-radius:8px;background:#eee;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 18px}
 .tile{border:0;border-radius:8px;min-height:82px;padding:8px;background:#e8e8e8;color:#222;font-size:16px;font-weight:700;cursor:pointer}
-.tile.selected{background:#555;color:white}.controls{display:flex;justify-content:center;gap:10px}
+.tile.selected{background:#555;color:white}
+.controls{display:flex;justify-content:center;gap:10px}
 button.control{border:0;border-radius:7px;padding:12px 22px;font-size:16px;font-weight:700;cursor:pointer;background:#222;color:white}
-button.control.secondary{background:#ddd;color:#222}button.control:disabled{opacity:.45;cursor:default}
-.win{margin-top:18px;padding:18px;border-radius:10px;background:#e6e6e6}.win h2{margin:0 0 8px}
-@media(max-width:520px){.game{padding:22px 10px 32px}h1{font-size:27px}.tile{min-height:70px;font-size:14px}}
-</style></head><body>
-<div class="game"><h1 id="title"></h1><p class="instructions">Find four groups of four words that share something in common.</p>
-<div class="mistakes">Mistakes remaining: <span class="dots" id="dots"></span></div>
-<div id="message"></div><div class="groups" id="groups"></div><div class="grid" id="grid"></div>
-<div class="controls"><button class="control" id="submitBtn">Submit</button><button class="control secondary" id="shuffleBtn">Shuffle</button></div>
-<div id="win"></div></div>
-<script src="puzzles.js"></script><script>
-const maxMistakes=4, groupColors=["blue","purple","yellow","green"];
-const requestedId=Number(new URLSearchParams(location.search).get("puzzle"))||1;
-const puzzle=PUZZLES[requestedId]||PUZZLES[1];
-let tiles=[],selected=[],mistakes=0,solvedGroups=[],infinityMode=false;
-const attemptedWrongGuesses=new Set();
-function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function allWords(){return puzzle.groups.flatMap((g,gi)=>g.words.map(word=>({word,groupIndex:gi})))}
-function renderDots(){dots.innerHTML="";for(let i=0;i<maxMistakes;i++){let d=document.createElement("span");d.className="dot"+(i<mistakes?" used":"");dots.appendChild(d)}}
-function renderGroups(){groups.innerHTML="";solvedGroups.forEach(g=>{let d=document.createElement("div");d.className="solved group-"+groupColors[g.groupIndex];d.innerHTML="<div class='connection'>"+g.connection+"</div><div class='words'>"+g.words.join(" • ")+"</div>";groups.appendChild(d)});
-if(infinityMode&&solvedGroups.length<4){let n=document.createElement("div");n.className="infinity";n.textContent="Infinity Mode: Keep solving! You can keep guessing.";groups.appendChild(n)}}
-function renderGrid(){grid.innerHTML="";tiles.forEach((t,i)=>{let b=document.createElement("button");b.className="tile"+(selected.includes(i)?" selected":"");b.textContent=t.word;b.onclick=()=>toggleTile(i);grid.appendChild(b)})}
-function render(){renderDots();renderGroups();renderGrid();submitBtn.disabled=selected.length!==4||solvedGroups.length===4;shuffleBtn.disabled=solvedGroups.length===4}
-function toggleTile(i){if(solvedGroups.length===4)return;if(selected.includes(i))selected=selected.filter(x=>x!==i);else if(selected.length<4)selected.push(i);message.textContent="";render()}
-function submitSelection(){
-if(selected.length!==4)return;let words=selected.map(i=>tiles[i].word),key=[...words].sort().join("|");
-if(attemptedWrongGuesses.has(key)){message.textContent="Already Tried";selected=[];render();return}
-let overlaps=puzzle.groups.map(g=>words.filter(w=>g.words.includes(w)).length),best=Math.max(...overlaps);
-let gi=tiles[selected[0]].groupIndex,g=puzzle.groups[gi],correct=words.every(w=>g.words.includes(w));
-if(correct){solvedGroups.push({...g,groupIndex:gi});tiles=tiles.filter((_,i)=>!selected.includes(i));selected=[];message.textContent="Correct!";
-if(solvedGroups.length===4){win.innerHTML="<div class='win'><h2>Puzzle Complete!</h2><div>You solved all four connections.</div></div>";message.textContent=""}}
-else{attemptedWrongGuesses.add(key);mistakes++;message.textContent=best===3?"One away!":"Not quite. Try again.";selected=[];if(mistakes>=maxMistakes){infinityMode=true;message.textContent="You've used your four mistakes. Infinity Mode is on!"}}
-render()}
-function start(){title.textContent=puzzle.title;tiles=shuffle(allWords());selected=[];mistakes=0;solvedGroups=[];infinityMode=false;attemptedWrongGuesses.clear();message.textContent="";win.innerHTML="";render()}
-submitBtn.onclick=submitSelection;shuffleBtn.onclick=()=>{tiles=shuffle(tiles);selected=[];message.textContent="";render()};start();
-</script></body></html>
+button.control.secondary{background:#ddd;color:#222}
+button.control:disabled{opacity:.45;cursor:default}
+.win{margin-top:18px;padding:18px;border-radius:10px;background:#e6e6e6}
+.win h2{margin:0 0 8px}
+.back-button{margin-top:18px}
+@media(max-width:520px){
+  .home{padding:30px 12px 36px}
+  .home-header h1{font-size:32px}
+  .puzzle-list{grid-template-columns:1fr}
+  .tile{min-height:70px;font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<div id="homePage" class="home">
+  <div class="home-header">
+    <h1>🧩 Connections Challenge</h1>
+    <p class="home-subtitle">Find the connections. Solve the challenge.</p>
+  </div>
+
+  <div class="home-section">
+    <h2>PLAY</h2>
+    <div class="puzzle-list" id="puzzleList"></div>
+  </div>
+
+  <div class="create-box">
+    <h2>✏️ Create Your Own</h2>
+    <p>Challenge your friends and classmates by creating your own Connections puzzle.</p>
+    <p style="margin-top:8px;font-weight:700;">Coming Soon</p>
+  </div>
+
+  <div class="challenge-line">Don't just find a connection. Find the strongest connection.</div>
+</div>
+
+<div id="gamePage" class="game" style="display:none;">
+  <h1 id="title"></h1>
+  <p class="instructions">Find four groups of four words that share something in common.</p>
+  <div class="mistakes">Mistakes remaining: <span class="dots" id="dots"></span></div>
+  <div id="message"></div>
+  <div class="groups" id="groups"></div>
+  <div class="grid" id="grid"></div>
+  <div class="controls">
+    <button class="control" id="submitBtn">Submit</button>
+    <button class="control secondary" id="shuffleBtn">Shuffle</button>
+  </div>
+  <div id="win"></div>
+  <button class="control secondary back-button" onclick="location.href=location.pathname">← Back to Challenges</button>
+</div>
+
+<script src="puzzles.js"></script>
+<script>
+const params=new URLSearchParams(location.search);
+const puzzleNumber=params.get("puzzle");
+
+if(!puzzleNumber){
+  document.getElementById("homePage").style.display="block";
+  document.getElementById("gamePage").style.display="none";
+
+  const puzzleList=document.getElementById("puzzleList");
+  const puzzleIds=Object.keys(PUZZLES).map(Number).sort((a,b)=>a-b);
+
+  puzzleIds.forEach(id=>{
+    const p=PUZZLES[id];
+    const button=document.createElement("button");
+    button.className="puzzle-button";
+    button.innerHTML="Puzzle "+id+"<small>"+p.title+"</small>";
+    button.onclick=()=>location.href="?puzzle="+id;
+    puzzleList.appendChild(button);
+  });
+}else{
+  document.getElementById("homePage").style.display="none";
+  document.getElementById("gamePage").style.display="block";
+
+  const maxMistakes=4;
+  const groupColors=["blue","purple","yellow","green"];
+  const requestedId=Number(puzzleNumber)||1;
+  const puzzle=PUZZLES[requestedId]||PUZZLES[1];
+
+  let tiles=[],selected=[],mistakes=0,solvedGroups=[],infinityMode=false;
+  const attemptedWrongGuesses=new Set();
+
+  function shuffle(a){
+    a=[...a];
+    for(let i=a.length-1;i>0;i--){
+      let j=Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function allWords(){
+    return puzzle.groups.flatMap((g,gi)=>g.words.map(word=>({word,groupIndex:gi})));
+  }
+
+  function renderDots(){
+    dots.innerHTML="";
+    for(let i=0;i<maxMistakes;i++){
+      let d=document.createElement("span");
+      d.className="dot"+(i<mistakes?" used":"");
+      dots.appendChild(d);
+    }
+  }
+
+  function renderGroups(){
+    groups.innerHTML="";
+    solvedGroups.forEach(g=>{
+      let d=document.createElement("div");
+      d.className="solved group-"+groupColors[g.groupIndex];
+      d.innerHTML="<div class='connection'>"+g.connection+"</div><div class='words'>"+g.words.join(" • ")+"</div>";
+      groups.appendChild(d);
+    });
+
+    if(infinityMode&&solvedGroups.length<4){
+      let n=document.createElement("div");
+      n.className="infinity";
+      n.textContent="Infinity Mode: Keep solving! You can keep guessing.";
+      groups.appendChild(n);
+    }
+  }
+
+  function renderGrid(){
+    grid.innerHTML="";
+    tiles.forEach((t,i)=>{
+      let b=document.createElement("button");
+      b.className="tile"+(selected.includes(i)?" selected":"");
+      b.textContent=t.word;
+      b.onclick=()=>toggleTile(i);
+      grid.appendChild(b);
+    });
+  }
+
+  function render(){
+    renderDots();
+    renderGroups();
+    renderGrid();
+    submitBtn.disabled=selected.length!==4||solvedGroups.length===4;
+    shuffleBtn.disabled=solvedGroups.length===4;
+  }
+
+  function toggleTile(i){
+    if(solvedGroups.length===4)return;
+    if(selected.includes(i)){
+      selected=selected.filter(x=>x!==i);
+    }else if(selected.length<4){
+      selected.push(i);
+    }
+    message.textContent="";
+    render();
+  }
+
+  function submitSelection(){
+    if(selected.length!==4)return;
+
+    let words=selected.map(i=>tiles[i].word);
+    let key=[...words].sort().join("|");
+
+    if(attemptedWrongGuesses.has(key)){
+      message.textContent="Already Tried";
+      selected=[];
+      render();
+      return;
+    }
+
+    let overlaps=puzzle.groups.map(g=>words.filter(w=>g.words.includes(w)).length);
+    let best=Math.max(...overlaps);
+    let gi=tiles[selected[0]].groupIndex;
+    let g=puzzle.groups[gi];
+    let correct=words.every(w=>g.words.includes(w));
+
+    if(correct){
+      solvedGroups.push({...g,groupIndex:gi});
+      tiles=tiles.filter((_,i)=>!selected.includes(i));
+      selected=[];
+      message.textContent="Correct!";
+
+      if(solvedGroups.length===4){
+        win.innerHTML="<div class='win'><h2>Puzzle Complete!</h2><div>You solved all four connections.</div></div>";
+        message.textContent="";
+      }
+    }else{
+      attemptedWrongGuesses.add(key);
+      mistakes++;
+      message.textContent=best===3?"One away!":"Not quite. Try again.";
+      selected=[];
+
+      if(mistakes>=maxMistakes){
+        infinityMode=true;
+        message.textContent="You've used your four mistakes. Infinity Mode is on!";
+      }
+    }
+
+    render();
+  }
+
+  function start(){
+    title.textContent=puzzle.title;
+    tiles=shuffle(allWords());
+    selected=[];
+    mistakes=0;
+    solvedGroups=[];
+    infinityMode=false;
+    attemptedWrongGuesses.clear();
+    message.textContent="";
+    win.innerHTML="";
+    render();
+  }
+
+  submitBtn.onclick=submitSelection;
+
+  shuffleBtn.onclick=()=>{
+    tiles=shuffle(tiles);
+    selected=[];
+    message.textContent="";
+    render();
+  };
+
+  start();
+}
+</script>
+</body>
+</html>
