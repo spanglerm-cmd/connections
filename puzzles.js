@@ -16,5 +16,23 @@ const PUZZLES = {
       {words:["GRAPES","PLUMS","CABBAGE","BEETS"], connection:"Purple Fruits and Vegetables"},
       {words:["LIMES","PEARS","KIWI","CUCUMBERS"], connection:"Green Fruits and Vegetables"}
     ]
+  },
+  3: {
+    id: 3, title: "Connections Puzzle 3",
+    groups: [
+      {words:["VERTEX","ARM","RAY","DEGREES"], connection:"Parts of an Angle"},
+      {words:["RIGHT","OBTUSE","ACUTE","REFLEX"], connection:"Types of Angles"},
+      {words:["CIRCLE","TRIANGLE","SQUARE","RECTANGLE"], connection:"2D Shapes"},
+      {words:["CUBE","SPHERE","PYRAMID","CONE"], connection:"3D Shapes"}
+    ]
+  },
+  4: {
+    id: 4, title: "Connections Puzzle 4",
+    groups: [
+      {words:["SCIENCE","HISTORY","MATH","GYM"], connection:"School Subjects"},
+      {words:["DESK","PROJECTOR","STAPLER","SHARPENER"], connection:"Classroom Items"},
+      {words:["BOOK","BINDER","COMPUTER","PENCIL"], connection:"Things Carried in a Backpack"},
+      {words:["CAFETERIA","LIBRARY","OFFICE","CLASSROOM"], connection:"Places in a School"}
+    ]
   }
 };
